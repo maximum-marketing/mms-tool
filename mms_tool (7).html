@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MMS Prospect Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f0ede8;font-size:14px;}
+#app{max-width:1100px;margin:0 auto;padding:0 16px 60px;}
+.bar{background:#1a1a2e;padding:0 16px;height:50px;display:flex;align-items:center;justify-content:space-between;margin:0 -16px 16px;}
+.bar-title{color:#52b788;font-size:14px;font-weight:700;}
+.bar img{height:26px;filter:brightness(0) invert(1);vertical-align:middle;margin-right:8px;}
+.tabs{display:flex;gap:4px;}
+.tab{padding:6px 14px;border:none;border-radius:4px;background:transparent;color:rgba(255,255,255,.5);font-size:13px;font-weight:600;cursor:pointer;}
+.tab.on{background:rgba(255,255,255,.18);color:white;}
+.screen{display:none;}
+.screen.on{display:block;}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;}
+.stat{background:white;border-radius:6px;padding:12px 14px;border:1px solid #ddd;}
+.stat-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#999;margin-bottom:4px;}
+.stat-n{font-size:24px;font-weight:700;color:#1a1a2e;}
+.stat-n.g{color:#2d6a4f;}.stat-n.gold{color:#c9922a;}.stat-n.r{color:#c0392b;}
+.tbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.tbar input,.tbar select{padding:7px 10px;border:1px solid #ddd;border-radius:5px;font-size:13px;outline:none;}
+.tbar input{flex:1;min-width:160px;}
+.btn{padding:7px 14px;border:none;border-radius:5px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial,sans-serif;}
+.btn-g{background:#2d6a4f;color:white;}.btn-gold{background:#c9922a;color:white;}
+.btn-grey{background:#ddd;color:#333;}.btn-red{background:#fde8e8;color:#c0392b;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;}
+.card{background:white;border-radius:6px;border:1px solid #ddd;border-left:4px solid #ddd;}
+.card.ov{border-left-color:#c0392b;}.card.sn{border-left-color:#e07a2f;}.card.cl{border-left-color:#2d6a4f;}
+.card-h{padding:10px 12px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+.card-biz{font-size:14px;font-weight:700;margin-bottom:2px;}
+.card-sub{font-size:11px;color:#999;}
+.card-m{padding:8px 12px;font-size:12px;color:#555;line-height:1.5;}
+.card-f{padding:7px 12px;background:#f9f8f5;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;}
+.fu{font-size:11px;font-weight:600;}.fu.ov{color:#c0392b;}.fu.sn{color:#e07a2f;}.fu.ok{color:#2d6a4f;}.fu.no{color:#999;}
+.bdg{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;}
+.bdg.prospect{background:#e8f0fe;color:#1a5276;}.bdg.contacted{background:#fef9e7;color:#9a7d0a;}
+.bdg.interested{background:#e9f7ef;color:#1e8449;}.bdg.client{background:#2d6a4f;color:white;}
+.bdg.notinterested{background:#f2f3f4;color:#666;}
+.empty{text-align:center;padding:50px;color:#999;grid-column:1/-1;}
+.ov{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:white;border-radius:8px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.3);}
+.modal.wide{max-width:680px;}
+.mh{padding:14px 18px 10px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;background:white;position:sticky;top:0;}
+.mh h3{font-size:16px;color:#1a1a2e;}
+.mx{background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1;}
+.mb{padding:16px 18px;}
+.mf{padding:10px 18px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px;}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.f{display:flex;flex-direction:column;gap:3px;}
+.f.full{grid-column:1/-1;}
+.f label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#999;}
+.f input,.f select,.f textarea{padding:7px 10px;border:1px solid #ddd;border-radius:5px;font-family:Arial;font-size:13px;outline:none;width:100%;}
+.f textarea{resize:vertical;min-height:68px;}
+.qbox{background:#f5f5f5;border-radius:5px;padding:10px 12px;margin:12px 0;}
+.qrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;}
+.qrow input,.qrow select{padding:6px 9px;border:1px solid #ddd;border-radius:5px;font-family:Arial;font-size:13px;outline:none;}
+.sdiv{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#2d6a4f;margin:12px 0 8px;padding-bottom:5px;border-bottom:1px solid #eee;}
+.note{background:#f5f5f5;border-left:3px solid #52b788;border-radius:4px;padding:7px 10px;margin-bottom:6px;}
+.note-d{font-size:10px;color:#999;font-weight:600;margin-bottom:2px;}
+.note-t{font-size:13px;color:#555;}
+.nadd{display:flex;gap:8px;margin-top:8px;}
+.nadd textarea{flex:1;padding:7px 10px;border:1px solid #ddd;border-radius:5px;font-family:Arial;font-size:13px;resize:none;height:50px;outline:none;}
+.sbox{background:#1a1a2e;border-radius:8px;padding:20px 24px;}
+.s2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.sinp{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:7px 10px;font-size:13px;color:white;font-family:Arial;outline:none;}
+.krow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;}
+.kpi{border:1px solid #ddd;border-radius:4px;padding:12px 14px;background:white;}
+.kpi.hi{border-color:#2d6a4f;border-width:2px;}
+.kl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:5px;line-height:1.3;}
+.kv{font-size:24px;font-weight:700;color:#1a1a2e;}.kpi.hi .kv{color:#2d6a4f;}
+.ks{font-size:10px;color:#999;margin-top:3px;}
+.rt{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:24px;}
+.rt th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#999;text-align:left;padding:5px 8px;border-bottom:2px solid #1a1a2e;}
+.rt th:not(:first-child){text-align:center;}
+.rt td{padding:7px 8px;border-bottom:1px solid #eee;vertical-align:middle;}
+.rt td:not(:first-child){text-align:center;}
+.obox{border-left:4px solid #c9922a;background:#fdf3e0;padding:10px 14px;border-radius:0 4px 4px 0;font-size:12.5px;color:#555;line-height:1.5;margin-bottom:12px;}
+.hbox{border-left:4px solid #52b788;background:#d8f3dc;padding:12px 18px;border-radius:0 4px 4px 0;font-size:12.5px;color:#444;line-height:1.6;margin-bottom:24px;}
+.og{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
+.op{border:1px solid #ddd;border-radius:4px;padding:12px 16px;background:white;}
+.op-t{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid #eee;}
+.op textarea{width:100%;border:none;background:transparent;font-family:Arial;font-size:12px;color:#555;line-height:1.5;resize:vertical;outline:none;}
+.refw{background:#f5f5f5;border-radius:4px;padding:14px 18px;margin-bottom:24px;}
+.reft{width:100%;border-collapse:collapse;font-size:11px;background:white;}
+.reft th{background:#1a1a2e;color:white;padding:6px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;text-align:left;}
+.reft th:not(:first-child){text-align:center;}
+.reft td{padding:5px 8px;border-bottom:1px solid #eee;color:#555;}
+.reft td:not(:first-child){text-align:center;}
+.reft tr:nth-child(even){background:#f9f9f9;}
+.rh{border-bottom:3px solid #1a1a2e;padding-bottom:18px;margin-bottom:24px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:end;}
+.re{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.16em;color:#2d6a4f;margin-bottom:6px;}
+.rb{font-size:26px;font-weight:700;color:#1a1a2e;line-height:1.1;margin-bottom:2px;}
+.rm{text-align:right;font-size:11px;color:#999;line-height:1.8;}.rm strong{color:#1a1a2e;}
+.nw{background:#1a1a2e;border-radius:4px;padding:18px 22px;margin-bottom:5px;}
+.nw textarea{width:100%;background:transparent;border:none;color:white;font-family:Arial;font-size:13px;line-height:1.6;resize:vertical;min-height:80px;outline:none;}
+.rf{padding-top:12px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:11px;color:#999;}
+.pb{font-size:10px;font-weight:700;color:white;padding:2px 5px;border-radius:3px;}
+.prb{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.igrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.ilbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:2px;}
+.ival{font-size:13px;color:#555;}.ival a{color:#2d6a4f;text-decoration:none;}
+@media print{.np{display:none!important;}body{background:white;}.screen.on{display:block!important;}}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="bar">
+  <div class="bar-title"><img src="data:image/png;base64,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" alt="">Maximum Marketing Solutions</div>
+  <div class="tabs">
+    <button class="tab on" onclick="showTab('t')" id="tbt">Prospect Tracker</button>
+    <button class="tab" onclick="showTab('r')" id="tbr">Snapshot Report</button>
+  </div>
+  <div></div>
+</div>
+
+<!-- TRACKER -->
+<div id="sct" class="screen on">
+  <div class="stats">
+    <div class="stat"><div class="stat-lbl">Total Prospects</div><div class="stat-n" id="n0">0</div></div>
+    <div class="stat"><div class="stat-lbl">Interested</div><div class="stat-n g" id="n1">0</div></div>
+    <div class="stat"><div class="stat-lbl">Clients</div><div class="stat-n g" id="n2">0</div></div>
+    <div class="stat"><div class="stat-lbl">Due Soon</div><div class="stat-n gold" id="n3">0</div></div>
+    <div class="stat"><div class="stat-lbl">Overdue</div><div class="stat-n r" id="n4">0</div></div>
+  </div>
+  <div class="tbar np">
+    <input id="sq" placeholder="Search name, business, suburb..." oninput="renderCards()">
+    <select id="ss" onchange="renderCards()">
+      <option value="">All Statuses</option>
+      <option value="prospect">Prospect</option>
+      <option value="contacted">Contacted</option>
+      <option value="interested">Interested</option>
+      <option value="client">Client</option>
+      <option value="notinterested">Not Interested</option>
+    </select>
+    <select id="sa" onchange="renderCards()"><option value="">All Areas</option></select>
+    <select id="sf" onchange="renderCards()">
+      <option value="">All Follow-ups</option>
+      <option value="overdue">Overdue</option>
+      <option value="today">Due Today</option>
+      <option value="week">This Week</option>
+    </select>
+    <button class="btn btn-grey" onclick="showScan()">Scan Cards</button>
+    <button class="btn btn-g" onclick="showAdd()">+ Add Prospect</button>
+    <button class="btn btn-gold" onclick="exportCsv()">Export CSV</button>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- REPORT -->
+<div id="scr" class="screen">
+  <div style="max-width:720px;margin:0 auto;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;" class="np">
+      <button class="btn btn-grey btn-sm" onclick="showTab('t')">Back to Tracker</button>
+      <strong style="font-size:17px;">Prospect Snapshot Report</strong>
+    </div>
+    <div id="pbar" style="display:none;background:#d8f3dc;border:1px solid #52b788;border-radius:5px;padding:8px 14px;font-size:13px;color:#2d6a4f;margin-bottom:12px;font-weight:700;"></div>
+    <div class="sbox">
+      <div style="font-size:15px;color:#52b788;font-weight:700;margin-bottom:4px;">Setup</div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:14px;line-height:1.6;">Fill in details and paste your SEMrush CSV. Open CSV in Notepad, Ctrl+A, Ctrl+C, then paste below.</div>
+      <div class="s2">
+        <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#888;display:block;margin-bottom:4px;">Business Name</label><input class="sinp" id="rb" placeholder="e.g. Brisbane Plumbing Co"></div>
+        <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#888;display:block;margin-bottom:4px;">Website</label><input class="sinp" id="ru" placeholder="e.g. www.example.com.au"></div>
+        <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#888;display:block;margin-bottom:4px;">Date</label><input class="sinp" id="rd"></div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#888;display:block;margin-bottom:4px;">SEMrush CSV - Paste Here</label>
+        <textarea id="rcsv" rows="4" placeholder="Paste SEMrush CSV here..." oninput="checkCsv()" style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:8px 10px;font-size:11px;color:#ccc;font-family:monospace;resize:vertical;outline:none;"></textarea>
+        <div id="csvst" style="font-size:11px;margin-top:3px;font-weight:600;min-height:14px;"></div>
+      </div>
+      <button class="btn btn-g" onclick="generateReport()">Generate Report</button>
+    </div>
+  </div>
+  <div id="rout" style="display:none;max-width:860px;margin:18px auto 0;"></div>
+</div>
+
+</div><!-- /app -->
+
+<!-- ADD/EDIT MODAL -->
+<div id="mov1" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;padding:20px;">
+<div class="modal" onclick="event.stopPropagation()">
+  <div class="mh"><h3 id="addtitle">Add Prospect</h3><button class="mx" onclick="hideModal('mov1')">&#215;</button></div>
+  <div class="mb">
+    <div class="fg">
+      <div class="f full"><label>Business Name *</label><input id="fb" placeholder="e.g. Brisbane Plumbing Co"></div>
+      <div class="f"><label>Contact Name</label><input id="fn" placeholder="John Smith"></div>
+      <div class="f"><label>Job Title</label><input id="fti" placeholder="Owner"></div>
+      <div class="f"><label>Phone</label><input id="fp" placeholder="0400 000 000"></div>
+      <div class="f"><label>Email</label><input id="fe" placeholder="john@biz.com.au"></div>
+      <div class="f"><label>Website</label><input id="fw" placeholder="www.biz.com.au"></div>
+      <div class="f"><label>Suburb / Area</label><input id="farea" placeholder="e.g. Capalaba"></div>
+      <div class="f"><label>Industry</label><input id="find" placeholder="e.g. Plumbing"></div>
+      <div class="f"><label>Status</label>
+        <select id="fstat">
+          <option value="prospect">Prospect</option>
+          <option value="contacted">Contacted</option>
+          <option value="interested">Interested</option>
+          <option value="client">Client</option>
+          <option value="notinterested">Not Interested</option>
+        </select>
+      </div>
+      <div class="f"><label>Follow-up Date</label><input type="date" id="fdate"></div>
+      <div class="f full"><label>Address</label><input id="fadd" placeholder="Street address"></div>
+      <div class="f full"><label>Notes</label><textarea id="fnotes" placeholder="First impressions, what they said..."></textarea></div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn btn-grey" onclick="hideModal('mov1')">Cancel</button>
+    <button class="btn btn-g" onclick="saveProspect()">Save Prospect</button>
+  </div>
+</div>
+</div>
+
+<!-- VIEW MODAL -->
+<div id="mov2" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;padding:20px;">
+<div class="modal wide" onclick="event.stopPropagation()">
+  <div class="mh"><h3 id="vtitle">Prospect</h3><button class="mx" onclick="hideModal('mov2')">&#215;</button></div>
+  <div class="mb" id="vbody"></div>
+  <div class="mf">
+    <button class="btn btn-sm btn-red" id="vdel" style="margin-right:auto;">Delete</button>
+    <button class="btn btn-sm btn-grey" onclick="hideModal('mov2')">Close</button>
+    <button class="btn btn-sm btn-g" id="vedit">Edit</button>
+    <button class="btn btn-sm btn-gold" id="vrep">Run Report</button>
+  </div>
+</div>
+</div>
+
+<!-- SCAN MODAL -->
+<div id="mov3" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;padding:20px;">
+<div class="modal" onclick="event.stopPropagation()">
+  <div class="mh"><h3>Scan Business Cards</h3><button class="mx" onclick="hideModal('mov3')">&#215;</button></div>
+  <div class="mb">
+    <p style="font-size:13px;color:#555;line-height:1.5;margin-bottom:12px;">Lay all cards flat, take one photo, upload it here. The AI reads every card automatically. Requires internet.</p>
+    <div onclick="document.getElementById('scanfile').click()" style="border:2px dashed #ddd;border-radius:6px;padding:22px;text-align:center;background:#f9f9f9;cursor:pointer;">
+      <div style="font-size:28px;opacity:.4;margin-bottom:5px;">&#128247;</div>
+      <div style="font-weight:700;font-size:13px;">Click to upload image (JPG or PNG)</div>
+      <input type="file" id="scanfile" accept="image/*" style="display:none;" onchange="doScan(event)">
+    </div>
+    <div id="scanmsg" style="display:none;margin-top:8px;padding:9px 12px;background:#1a1a2e;color:white;border-radius:5px;font-size:13px;">Reading cards...</div>
+    <div id="scanres"></div>
+  </div>
+  <div class="mf"><button class="btn btn-grey" onclick="hideModal('mov3')">Close</button></div>
+</div>
+</div>
+
+<script>
+// ── MODAL HELPERS ── these work exactly like the test file
+function showModal(id) {
+  var el = document.getElementById(id);
+  el.style.display = 'flex';
+}
+function hideModal(id) {
+  var el = document.getElementById(id);
+  el.style.display = 'none';
+}
+
+// ── TABS ──
+function showTab(t) {
+  document.getElementById('sct').style.display = t === 't' ? 'block' : 'none';
+  document.getElementById('scr').style.display = t === 'r' ? 'block' : 'none';
+  document.getElementById('tbt').className = 'tab' + (t === 't' ? ' on' : '');
+  document.getElementById('tbr').className = 'tab' + (t === 'r' ? ' on' : '');
+}
+
+// ── DATA ──
+var DATA = [];
+function loadData() {
+  try {
+    var r = localStorage.getItem('mms5');
+    DATA = r ? JSON.parse(r) : [];
+  } catch(e) { DATA = []; }
+  return DATA;
+}
+function saveData() {
+  try { localStorage.setItem('mms5', JSON.stringify(DATA)); } catch(e) {}
+}
+function makeId() { return 'p' + Date.now() + Math.floor(Math.random() * 9999); }
+
+// ── DATES ──
+function today() { return new Date().toISOString().split('T')[0]; }
+function addDays(s, n) {
+  var d = new Date((s || today()) + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+function fmtDate(s) {
+  if (!s) return '';
+  return new Date(s + 'T00:00:00').toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'});
+}
+function fuSt(s) {
+  if (!s) return 'no';
+  var t = today();
+  if (s < t) return 'ov';
+  if (s === t) return 'td';
+  if (s <= addDays(t, 7)) return 'sn';
+  return 'ok';
+}
+function fuTxt(p) {
+  var s = fuSt(p.followup);
+  if (!p.followup) return 'No follow-up set';
+  if (s === 'ov') return 'OVERDUE: ' + fmtDate(p.followup);
+  if (s === 'td') return 'Follow up TODAY';
+  if (s === 'sn') return 'Due ' + fmtDate(p.followup);
+  return fmtDate(p.followup);
+}
+function fuCls(s) {
+  if (s === 'ov') return 'ov';
+  if (s === 'td' || s === 'sn') return 'sn';
+  if (s === 'ok') return 'ok';
+  return 'no';
+}
+var SL = {prospect:'Prospect',contacted:'Contacted',interested:'Interested',client:'Client',notinterested:'Not Interested'};
+
+// ── ESCAPE HTML ──
+function esc(s) {
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(s || '')));
+  return d.innerHTML;
+}
+
+// ── STATS ──
+function updateStats() {
+  var t = today(), wk = addDays(t, 7);
+  document.getElementById('n0').textContent = DATA.length;
+  document.getElementById('n1').textContent = DATA.filter(function(p) { return p.status === 'interested'; }).length;
+  document.getElementById('n2').textContent = DATA.filter(function(p) { return p.status === 'client'; }).length;
+  document.getElementById('n3').textContent = DATA.filter(function(p) { return p.followup && p.followup >= t && p.followup <= wk; }).length;
+  document.getElementById('n4').textContent = DATA.filter(function(p) { return p.followup && p.followup < t; }).length;
+}
+
+// ── AREA FILTER ──
+function refreshAreas() {
+  var areas = [];
+  DATA.forEach(function(p) { if (p.area && areas.indexOf(p.area) === -1) areas.push(p.area); });
+  areas.sort();
+  var sel = document.getElementById('sa');
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">All Areas</option>';
+  areas.forEach(function(a) {
+    var o = document.createElement('option');
+    o.value = a; o.textContent = a;
+    if (a === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+// ── RENDER CARDS ──
+function renderCards() {
+  var q = document.getElementById('sq').value.toLowerCase();
+  var fs = document.getElementById('ss').value;
+  var fa = document.getElementById('sa').value;
+  var ff = document.getElementById('sf').value;
+  var t = today(), wk = addDays(t, 7);
+
+  var list = DATA.filter(function(p) {
+    if (q) {
+      var hay = (p.biz||'') + ' ' + (p.name||'') + ' ' + (p.area||'') + ' ' + (p.industry||'') + ' ' + (p.email||'');
+      if (hay.toLowerCase().indexOf(q) === -1) return false;
+    }
+    if (fs && p.status !== fs) return false;
+    if (fa && p.area !== fa) return false;
+    var s = fuSt(p.followup);
+    if (ff === 'overdue' && s !== 'ov') return false;
+    if (ff === 'today' && s !== 'td') return false;
+    if (ff === 'week' && s !== 'sn') return false;
+    return true;
+  });
+
+  var ord = {ov:0, td:1, sn:2, ok:3, no:4};
+  list.sort(function(a, b) {
+    var da = ord[fuSt(a.followup)], db = ord[fuSt(b.followup)];
+    return da !== db ? da - db : (a.biz||'').localeCompare(b.biz||'');
+  });
+
+  var g = document.getElementById('grid');
+  if (!list.length) {
+    g.innerHTML = '<div class="empty"><div style="font-size:40px;opacity:.3;margin-bottom:12px;">&#128205;</div><div style="font-size:14px;">' + (DATA.length ? 'No prospects match your filters' : 'Click + Add Prospect or Scan Cards to start') + '</div></div>';
+    updateStats(); refreshAreas(); return;
+  }
+
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var p = list[i];
+    var s = fuSt(p.followup), fc = fuCls(s);
+    var cc = p.status === 'client' ? 'cl' : s === 'ov' ? 'ov' : (s === 'td' || s === 'sn') ? 'sn' : '';
+    var nl = (p.notes_log || []).length;
+    var pid = p.id;
+    html += '<div class="card ' + cc + '">';
+    html += '<div class="card-h"><div><div class="card-biz">' + esc(p.biz || '-') + '</div>';
+    if (p.name) html += '<div class="card-sub">' + esc(p.name) + (p.title ? ' - ' + esc(p.title) : '') + '</div>';
+    html += '</div><span class="bdg ' + (p.status||'prospect') + '">' + SL[p.status||'prospect'] + '</span></div>';
+    html += '<div class="card-m">';
+    if (p.area) html += esc(p.area) + (p.industry ? ' - ' + esc(p.industry) : '') + '<br>';
+    if (p.phone) html += esc(p.phone) + '<br>';
+    if (p.email) html += esc(p.email) + '<br>';
+    if (p.web) html += esc(p.web);
+    html += '</div>';
+    html += '<div class="card-f"><span class="fu ' + fc + '">' + fuTxt(p) + '</span>';
+    html += '<div style="display:flex;gap:5px;align-items:center;">';
+    if (nl) html += '<span style="font-size:10px;color:#999;">' + nl + 'n</span>';
+    html += '<button class="btn btn-sm btn-grey" onclick="openView(&quot;' + pid + '&quot;)">View</button>';
+    html += '<button class="btn btn-sm btn-g" onclick="runReport(&quot;' + pid + '&quot;)" style="padding:4px 8px;font-size:11px;">Report</button>';
+    html += '</div></div></div>';
+  }
+  g.innerHTML = html;
+  updateStats(); refreshAreas();
+}
+
+// ── ADD / EDIT ──
+var editId = null;
+function showAdd(pre) {
+  editId = null;
+  document.getElementById('addtitle').textContent = 'Add Prospect';
+  document.getElementById('fb').value = '';
+  document.getElementById('fn').value = '';
+  document.getElementById('fti').value = '';
+  document.getElementById('fp').value = '';
+  document.getElementById('fe').value = '';
+  document.getElementById('fw').value = '';
+  document.getElementById('farea').value = '';
+  document.getElementById('find').value = '';
+  document.getElementById('fstat').value = 'prospect';
+  document.getElementById('fdate').value = addDays(today(), 7);
+  document.getElementById('fadd').value = '';
+  document.getElementById('fnotes').value = '';
+  if (pre) {
+    if (pre.biz) document.getElementById('fb').value = pre.biz;
+    if (pre.web) document.getElementById('fw').value = pre.web;
+  }
+  showModal('mov1');
+}
+function showEdit(id) {
+  var p = null;
+  for (var i = 0; i < DATA.length; i++) { if (DATA[i].id === id) { p = DATA[i]; break; } }
+  if (!p) return;
+  editId = id;
+  document.getElementById('addtitle').textContent = 'Edit Prospect';
+  document.getElementById('fb').value = p.biz || '';
+  document.getElementById('fn').value = p.name || '';
+  document.getElementById('fti').value = p.title || '';
+  document.getElementById('fp').value = p.phone || '';
+  document.getElementById('fe').value = p.email || '';
+  document.getElementById('fw').value = p.web || '';
+  document.getElementById('farea').value = p.area || '';
+  document.getElementById('find').value = p.industry || '';
+  document.getElementById('fstat').value = p.status || 'prospect';
+  document.getElementById('fdate').value = p.followup || '';
+  document.getElementById('fadd').value = p.address || '';
+  document.getElementById('fnotes').value = p.notes || '';
+  hideModal('mov2');
+  showModal('mov1');
+}
+function saveProspect() {
+  var biz = document.getElementById('fb').value.trim();
+  if (!biz) { alert('Business name is required.'); return; }
+  var ex = null;
+  if (editId) {
+    for (var i = 0; i < DATA.length; i++) { if (DATA[i].id === editId) { ex = DATA[i]; break; } }
+  }
+  var p = {
+    id: editId || makeId(),
+    biz: biz,
+    name: document.getElementById('fn').value.trim(),
+    title: document.getElementById('fti').value.trim(),
+    phone: document.getElementById('fp').value.trim(),
+    email: document.getElementById('fe').value.trim(),
+    web: document.getElementById('fw').value.trim(),
+    area: document.getElementById('farea').value.trim(),
+    industry: document.getElementById('find').value.trim(),
+    status: document.getElementById('fstat').value,
+    followup: document.getElementById('fdate').value,
+    address: document.getElementById('fadd').value.trim(),
+    notes: document.getElementById('fnotes').value.trim(),
+    notes_log: ex ? (ex.notes_log || []) : [],
+    created: ex ? ex.created : today(),
+    updated: today()
+  };
+  if (editId) {
+    for (var i = 0; i < DATA.length; i++) { if (DATA[i].id === p.id) { DATA[i] = p; break; } }
+  } else {
+    DATA.push(p);
+  }
+  saveData();
+  hideModal('mov1');
+  renderCards();
+}
+
+// ── VIEW ──
+var viewId = null;
+function openView(id) {
+  var p = null;
+  for (var i = 0; i < DATA.length; i++) { if (DATA[i].id === id) { p = DATA[i]; break; } }
+  if (!p) return;
+  viewId = id;
+  document.getElementById('vtitle').textContent = p.biz || 'Prospect';
+  var s = fuSt(p.followup), fc = fuCls(s);
+  var h = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><strong style="font-size:18px;">' + esc(p.biz||'-') + '</strong><span class="bdg ' + (p.status||'prospect') + '">' + SL[p.status||'prospect'] + '</span></div>';
+  h += '<div class="igrid">';
+  if (p.name) h += '<div><div class="ilbl">Contact</div><div class="ival">' + esc(p.name) + (p.title ? ' - ' + esc(p.title) : '') + '</div></div>';
+  if (p.phone) h += '<div><div class="ilbl">Phone</div><div class="ival"><a href="tel:' + esc(p.phone) + '">' + esc(p.phone) + '</a></div></div>';
+  if (p.email) h += '<div><div class="ilbl">Email</div><div class="ival"><a href="mailto:' + esc(p.email) + '">' + esc(p.email) + '</a></div></div>';
+  if (p.web) h += '<div><div class="ilbl">Website</div><div class="ival">' + esc(p.web) + '</div></div>';
+  if (p.area) h += '<div><div class="ilbl">Area</div><div class="ival">' + esc(p.area) + (p.industry ? ' - ' + esc(p.industry) : '') + '</div></div>';
+  h += '<div><div class="ilbl">Follow-up</div><div class="fu ' + fc + '">' + fuTxt(p) + '</div></div>';
+  h += '</div>';
+  if (p.notes) h += '<div style="background:#f5f5f5;border-radius:5px;padding:9px 11px;font-size:13px;color:#555;line-height:1.5;margin-bottom:12px;">' + esc(p.notes) + '</div>';
+  h += '<div class="qbox"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:6px;">Quick Update</div>';
+  h += '<div class="qrow"><input type="date" id="qdate" value="' + (p.followup||'') + '">';
+  h += '<select id="qstat">';
+  var opts = ['prospect','contacted','interested','client','notinterested'];
+  for (var i = 0; i < opts.length; i++) {
+    h += '<option value="' + opts[i] + '"' + (p.status === opts[i] ? ' selected' : '') + '>' + SL[opts[i]] + '</option>';
+  }
+  h += '</select><button class="btn btn-sm btn-g" onclick="quickUpdate()">Update</button></div></div>';
+  h += '<div class="sdiv">Activity Log</div>';
+  var logs = p.notes_log || [];
+  if (!logs.length) h += '<div style="font-size:12px;color:#999;font-style:italic;margin-bottom:8px;">No notes yet.</div>';
+  for (var i = logs.length - 1; i >= 0; i--) {
+    h += '<div class="note"><div class="note-d">' + fmtDate(logs[i].date) + (logs[i].time ? ' - ' + logs[i].time : '') + '</div><div class="note-t">' + esc(logs[i].text) + '</div></div>';
+  }
+  h += '<div class="nadd"><textarea id="newnote" placeholder="Add a note - what happened, what was said..."></textarea><button class="btn btn-g" onclick="addNote()">Add</button></div>';
+  document.getElementById('vbody').innerHTML = h;
+  document.getElementById('vdel').onclick = function() { deletePros(id); };
+  document.getElementById('vedit').onclick = function() { showEdit(id); };
+  document.getElementById('vrep').onclick = function() { hideModal('mov2'); runReport(id); };
+  showModal('mov2');
+}
+function addNote() {
+  var txt = document.getElementById('newnote').value.trim();
+  if (!txt || !viewId) return;
+  for (var i = 0; i < DATA.length; i++) {
+    if (DATA[i].id === viewId) {
+      if (!DATA[i].notes_log) DATA[i].notes_log = [];
+      var now = new Date();
+      DATA[i].notes_log.push({date:today(), time:now.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}), text:txt});
+      DATA[i].updated = today();
+      break;
+    }
+  }
+  saveData();
+  openView(viewId);
+}
+function quickUpdate() {
+  var nd = document.getElementById('qdate').value;
+  var ns = document.getElementById('qstat').value;
+  for (var i = 0; i < DATA.length; i++) {
+    if (DATA[i].id === viewId) { DATA[i].followup = nd; DATA[i].status = ns; DATA[i].updated = today(); break; }
+  }
+  saveData(); renderCards(); openView(viewId);
+}
+function deletePros(id) {
+  if (!confirm('Delete this prospect? Cannot be undone.')) return;
+  DATA = DATA.filter(function(p) { return p.id !== id; });
+  saveData(); hideModal('mov2'); renderCards();
+}
+
+// ── REPORT SHORTCUT ──
+function runReport(id) {
+  var p = null;
+  for (var i = 0; i < DATA.length; i++) { if (DATA[i].id === id) { p = DATA[i]; break; } }
+  if (!p) return;
+  document.getElementById('rb').value = p.biz || '';
+  document.getElementById('ru').value = p.web || '';
+  var bar = document.getElementById('pbar');
+  bar.textContent = 'Pre-filled: ' + p.biz;
+  bar.style.display = 'block';
+  document.getElementById('rout').style.display = 'none';
+  showTab('r');
+}
+
+// ── SCAN ──
+var extCards = [], addedCards = {};
+function showScan() {
+  document.getElementById('scanmsg').style.display = 'none';
+  document.getElementById('scanres').innerHTML = '';
+  document.getElementById('scanfile').value = '';
+  showModal('mov3');
+}
+function doScan(ev) {
+  var f = ev.target.files[0]; if (!f) return;
+  document.getElementById('scanmsg').style.display = 'block';
+  document.getElementById('scanres').innerHTML = '';
+  var fr = new FileReader();
+  fr.onload = function(e2) {
+    var b64 = e2.target.result.split(',')[1];
+    var mime = f.type || 'image/jpeg';
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{role:'user', content:[
+          {type:'image', source:{type:'base64', media_type:mime, data:b64}},
+          {type:'text', text:'Extract all business cards. Return ONLY a JSON array, no markdown. Each item: {"biz":"","name":"","title":"","phone":"","email":"","web":"","address":"","area":""}'}
+        ]}]
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('scanmsg').style.display = 'none';
+      var txt = (data.content && data.content[0]) ? data.content[0].text : '';
+      try {
+        var clean = txt.replace(/^```json|^```|```$/gm, '').trim();
+        extCards = JSON.parse(clean);
+        addedCards = {};
+        var h = '<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#999;margin:12px 0 8px;padding-bottom:5px;border-bottom:1px solid #eee;">' + extCards.length + ' card' + (extCards.length !== 1 ? 's' : '') + ' detected</div>';
+        for (var i = 0; i < extCards.length; i++) {
+          var c = extCards[i];
+          h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;background:#f5f5f5;border:1px solid #ddd;border-radius:5px;padding:10px;margin-bottom:7px;">';
+          h += '<div><strong style="font-size:13px;">' + esc(c.biz||'Unknown') + '</strong><div style="font-size:11px;color:#999;">';
+          var parts = [c.name, c.title, c.phone, c.email, c.area].filter(function(x) { return x; });
+          h += parts.map(esc).join(' - ') + '</div></div>';
+          h += '<button id="scanbtn' + i + '" class="btn btn-sm btn-g" onclick="addScanned(' + i + ')" style="flex-shrink:0;margin-left:8px;">Add</button>';
+          h += '</div>';
+        }
+        h += '<button class="btn btn-g" style="margin-top:4px;" onclick="addAllScanned()">Add All ' + extCards.length + ' Cards</button>';
+        document.getElementById('scanres').innerHTML = h;
+      } catch(ex) {
+        document.getElementById('scanres').innerHTML = '<div style="color:#c0392b;font-size:13px;margin-top:10px;">Could not read cards. Try a clearer photo.</div>';
+      }
+    })
+    .catch(function(err) {
+      document.getElementById('scanmsg').style.display = 'none';
+      document.getElementById('scanres').innerHTML = '<div style="color:#c0392b;font-size:13px;margin-top:10px;">Error: ' + esc(err.message) + '</div>';
+    });
+  };
+  fr.readAsDataURL(f);
+}
+function addScanned(i) {
+  if (addedCards[i]) return;
+  var c = extCards[i];
+  DATA.push({id:makeId(), biz:c.biz||'', name:c.name||'', title:c.title||'', phone:c.phone||'', email:c.email||'', web:c.web||'', area:c.area||'', industry:'', status:'prospect', followup:addDays(today(),7), address:c.address||'', notes:'', notes_log:[], created:today(), updated:today()});
+  saveData(); addedCards[i] = true; renderCards();
+  var btn = document.getElementById('scanbtn' + i);
+  if (btn) { btn.textContent = 'Added'; btn.disabled = true; btn.style.background = '#52b788'; }
+}
+function addAllScanned() {
+  for (var i = 0; i < extCards.length; i++) { if (!addedCards[i]) addScanned(i); }
+  hideModal('mov3');
+}
+
+// ── EXPORT ──
+function exportCsv() {
+  if (!DATA.length) { alert('No prospects to export.'); return; }
+  var headers = ['Business','Name','Title','Phone','Email','Website','Area','Industry','Status','Follow-up','Address','Notes','Notes Log','Created'];
+  var rows = [headers.join(',')];
+  for (var i = 0; i < DATA.length; i++) {
+    var p = DATA[i];
+    var log = (p.notes_log||[]).map(function(n) { return '[' + n.date + '] ' + n.text; }).join(' | ');
+    var vals = [p.biz,p.name,p.title,p.phone,p.email,p.web,p.area,p.industry,p.status,p.followup,p.address,p.notes,log,p.created];
+    var rowStr = '';
+    for (var j = 0; j < vals.length; j++) {
+      if (j > 0) rowStr += ',';
+      rowStr += '"' + String(vals[j]||'').split('"').join('""') + '"';
+    }
+    rows.push(rowStr);
+  }
+  var csvContent = rows.join('\r\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+  a.download = 'Prospects_' + today() + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+// ── SEMRUSH PARSER ──
+function splitCsv(line) {
+  var cols = [], cur = '', inQ = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { cols.push(cur); cur = ''; }
+    else { cur += ch; }
+  }
+  cols.push(cur);
+  return cols;
+}
+function parseSemrush(txt) {
+  txt = txt.replace(/^﻿/, '');
+  var lines = txt.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  var first = lines[0];
+  var delim = first.indexOf('	') !== -1 ? '	' : ',';
+  var rawH = delim === '	' ? first.split('	') : splitCsv(first);
+  var hdr = rawH.map(function(h) { return h.replace(/"/g,'').trim().toLowerCase(); });
+  function findCol(names) {
+    for (var i = 0; i < names.length; i++) {
+      for (var j = 0; j < hdr.length; j++) {
+        if (hdr[j] === names[i] || hdr[j].indexOf(names[i]) !== -1) return hdr[j];
+      }
+    }
+    return null;
+  }
+  var kwC = findCol(['keyword','query']);
+  var posC = findCol(['position','pos','rank']);
+  var volC = findCol(['search volume','volume','monthly searches','searches','vol']);
+  var difC = findCol(['keyword difficulty','difficulty','kd','diff']);
+  var typC = findCol(['position type','type']);
+  if (!kwC || !posC) return [];
+  var rows = [];
+  for (var i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    var cols = delim === '	' ? lines[i].split('	') : splitCsv(lines[i]);
+    var row = {};
+    for (var j = 0; j < hdr.length; j++) { row[hdr[j]] = cols[j] ? cols[j].replace(/"/g,'').trim() : ''; }
+    if (typC && row[typC] && row[typC].toLowerCase() !== 'organic') continue;
+    var kw = row[kwC] || '';
+    var pos = parseInt(row[posC]) || 999;
+    var rv = volC ? row[volC] : '';
+    var vol = (rv && rv !== '-' && rv !== '--' && rv.toLowerCase() !== 'n/a') ? (parseInt(rv.replace(/[^0-9]/g,'')) || 0) : 0;
+    if (kw) rows.push({kw:kw, pos:pos, vol:vol, dif:difC?row[difC]:''});
+  }
+  return rows;
+}
+function checkCsv() {
+  var v = document.getElementById('rcsv').value.trim();
+  var st = document.getElementById('csvst');
+  if (!v) { st.textContent = ''; return; }
+  var r = parseSemrush(v);
+  if (r.length) { st.textContent = 'Ready - ' + r.length + ' keywords detected'; st.style.color = '#2d6a4f'; }
+  else { st.textContent = 'Cannot read - paste full CSV with header row'; st.style.color = '#e07a2f'; }
+}
+function fmtVol(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
+  return String(n);
+}
+
+// ── GENERATE REPORT ──
+function hideReportOut() {
+  document.getElementById('rout').style.display = 'none';
+}
+function generateReport() {
+  var csv = document.getElementById('rcsv').value.trim();
+  if (!csv) { alert('Please paste SEMrush CSV data first.'); return; }
+  var rows = parseSemrush(csv);
+  if (!rows.length) { alert('Cannot read CSV. Check the header row is included.'); return; }
+  var biz = document.getElementById('rb').value.trim() || 'Business Name';
+  var url = document.getElementById('ru').value.trim();
+  var date = document.getElementById('rd').value.trim() || new Date().toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+  var t100 = rows.filter(function(r) { return r.pos >= 1 && r.pos <= 100; }).sort(function(a,b) { return a.pos - b.pos; });
+  var opp = rows.filter(function(r) { return r.pos > 100; }).sort(function(a,b) { return b.vol - a.vol; }).slice(0,20);
+  var t20 = t100.slice(0,20);
+  var tv = 0; for (var i = 0; i < t100.length; i++) tv += t100[i].vol;
+  var t10 = 0, t3 = 0, t20c = 0;
+  for (var i = 0; i < t100.length; i++) {
+    if (t100[i].pos <= 3) t3++;
+    if (t100[i].pos <= 10) t10++;
+    if (t100[i].pos <= 20) t20c++;
+  }
+  function pc(p) {
+    if (!p || p >= 999) return '<span style="color:#999;font-size:11px;">-</span>';
+    var col = p <= 3 ? '#2d6a4f' : p <= 10 ? '#1a1a2e' : p <= 20 ? '#555' : '#999';
+    return '<span style="font-size:16px;font-weight:700;color:' + col + '">' + p + '</span>';
+  }
+  function pgb(p) {
+    if (!p || p >= 100) return '';
+    var n = Math.ceil(p/10), bg = p <= 10 ? '#2d6a4f' : p <= 20 ? '#3d3d5c' : '#999';
+    return '<span class="pb" style="background:' + bg + '">P' + n + '</span>';
+  }
+  function prb(v) {
+    if (v >= 500) return '<span class="prb" style="background:#fde8e8;color:#c0392b;">High</span>';
+    if (v >= 200) return '<span class="prb" style="background:#fdf3e0;color:#c9922a;">Medium</span>';
+    return '<span class="prb" style="background:#eee;color:#999;">Grow</span>';
+  }
+  function kp(l,v,s,hi) {
+    return '<div class="kpi' + (hi?' hi':'') + '"><div class="kl">' + l + '</div><div class="kv">' + v + '</div><div class="ks">' + s + '</div></div>';
+  }
+  var logo = document.querySelector('.bar img').src;
+  var h = '<div style="display:flex;gap:8px;margin-bottom:18px;" class="np">'
+    + '<button class="btn btn-grey btn-sm" onclick="document.getElementById(&quot;rout&quot;).style.display=&quot;none&quot;;">Back to Setup</button>'
+    + '<button class="btn btn-g btn-sm" onclick="window.print()">Print / Save PDF</button>'
+    + '</div>'
+    + '<div class="rh">'
+    + '<div><div class="re">Maximum Marketing Solutions - Website Visibility Snapshot</div>'
+    + '<div class="rb">' + esc(biz) + '</div>'
+    + (url ? '<div style="font-size:12px;color:#999;">' + esc(url) + '</div>' : '')
+    + '</div>'
+    + '<div class="rm"><img src="' + logo + '" style="height:32px;width:auto;display:block;margin-bottom:5px;margin-left:auto;">'
+    + 'To discuss further call: <strong>David</strong><br>'
+    + 'P: <strong>0459 472 739</strong><br>'
+    + 'E: <strong>david@maximummarketingsolutions.com.au</strong><br>'
+    + esc(date) + '</div></div>'
+    + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#2d6a4f;margin-bottom:10px;">This Snapshot in Plain English</div>'
+    + '<div class="nw"><textarea placeholder="Write your summary here..."></textarea></div>'
+    + '<div style="font-size:11px;color:#2d6a4f;font-weight:600;margin-bottom:22px;">- David, Maximum Marketing Solutions</div>'
+    + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#2d6a4f;margin-bottom:10px;">At a Glance</div>'
+    + '<div class="krow">'
+    + kp('Keywords Page 1', t10, 'of ' + rows.length + ' tracked', t10 > 0)
+    + kp('Top 3 Positions', t3, 'positions 1-3', t3 > 0)
+    + kp('Page 1-2', t20c, 'positions 1-20', false)
+    + kp('Total Top 100', t100.length, fmtVol(tv) + ' searches/mo', false)
+    + '</div>'
+    + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#2d6a4f;margin-bottom:10px;">Top 20 Keywords</div>'
+    + '<table class="rt"><thead><tr><th>Keyword</th><th>Position</th><th>Monthly Searches</th><th>Page</th></tr></thead><tbody>';
+  for (var i = 0; i < t20.length; i++) {
+    var r = t20[i];
+    h += '<tr><td style="font-weight:600;">' + esc(r.kw) + '</td><td>' + pc(r.pos) + '</td><td style="font-size:11px;color:#555;">' + (r.vol > 0 ? r.vol.toLocaleString() + '/mo' : '-') + '</td><td>' + pgb(r.pos) + '</td></tr>';
+  }
+  h += '</tbody></table>';
+  if (opp.length) {
+    h += '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#2d6a4f;margin-bottom:10px;">Opportunity Keywords - Outside Top 100</div>'
+      + '<div class="obox"><strong>Top ' + opp.length + ' keywords by volume currently outside the top 100.</strong> Appearing in Google but too deep to generate clicks.</div>'
+      + '<table class="rt"><thead><tr><th>Keyword</th><th>Monthly Searches</th><th>Position</th><th>Difficulty</th><th>Priority</th></tr></thead><tbody>';
+    for (var i = 0; i < opp.length; i++) {
+      var r = opp[i];
+      h += '<tr><td style="font-weight:600;">' + esc(r.kw) + '</td><td style="font-size:11px;color:#555;">' + (r.vol > 0 ? r.vol.toLocaleString() + '/mo' : '-') + '</td><td style="font-size:11px;color:#999;">' + r.pos + '</td><td style="font-size:11px;color:#555;">' + (r.dif||'-') + '</td><td>' + prb(r.vol) + '</td></tr>';
+    }
+    h += '</tbody></table>';
+  }
+  h += '<div class="hbox"><strong>Rankings are leading indicators</strong> - they show where the site sits in Google right now. The real measure is whether the phone rings more.<br><br>These are searches real people in your area make every day. Getting onto page one for even a handful of these terms would directly impact enquiries.</div>';
+  h += '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#2d6a4f;margin-bottom:10px;">Observations</div><div class="og">';
+  var obs = ['Business Observations|Competitive landscape? Quick wins?','What Could Change With SEO|Realistic in 6-12 months?','Your Recommendations|What to focus on first...','Worth Discussing|Seasonal, competitors, opportunities...'];
+  for (var i = 0; i < obs.length; i++) {
+    var pts = obs[i].split('|');
+    h += '<div class="op"><div class="op-t">' + pts[0] + '</div><textarea rows="4" placeholder="' + pts[1] + '"></textarea></div>';
+  }
+  h += '</div>';
+  h += '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#2d6a4f;margin-bottom:10px;">Full Reference - All Top 100</div>';
+  h += '<div class="refw"><p style="font-size:12px;color:#999;margin-bottom:10px;">All ' + t100.length + ' keywords in the top 100, sorted by position.</p>';
+  h += '<table class="reft"><thead><tr><th>Keyword</th><th>Position</th><th>Monthly Vol</th><th>Difficulty</th></tr></thead><tbody>';
+  for (var i = 0; i < t100.length; i++) {
+    var r = t100[i];
+    var col = r.pos <= 3 ? '#2d6a4f' : r.pos <= 10 ? '#1a1a2e' : '#999';
+    h += '<tr><td>' + esc(r.kw) + '</td><td style="font-size:14px;font-weight:700;color:' + col + ';">' + r.pos + '</td><td>' + (r.vol > 0 ? r.vol.toLocaleString() + '/mo' : '-') + '</td><td>' + (r.dif||'-') + '</td></tr>';
+  }
+  h += '</tbody></table></div>';
+  h += '<div class="rf"><div>Maximum Marketing Solutions - Confidential - Prepared for ' + esc(biz) + ' only</div><div>David - 0459 472 739 - david@maximummarketingsolutions.com.au</div></div>';
+  var out = document.getElementById('rout');
+  out.innerHTML = h;
+  out.style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+// ── INIT ──
+loadData();
+renderCards();
+document.getElementById('rd').value = new Date().toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+</script>
+</body>
+</html>
