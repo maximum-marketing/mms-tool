@@ -587,14 +587,19 @@ function doScan(ev) {
   fr.onload = function(e2) {
     var b64 = e2.target.result.split(',')[1];
     var mime = f.type || 'image/jpeg';
-    fetch('https://api.anthropic.com/v1/messages', {
+    fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer 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',
+        'HTTP-Referer': 'https://maximum-marketing.github.io/mms-tool/',
+        'X-Title': 'MMS Prospect Tracker'
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'anthropic/claude-sonnet-4-5',
         max_tokens: 1000,
         messages: [{role:'user', content:[
-          {type:'image', source:{type:'base64', media_type:mime, data:b64}},
+          {type:'image_url', image_url:{url:'data:' + mime + ';base64,' + b64}},
           {type:'text', text:'Extract all business cards. Return ONLY a JSON array, no markdown. Each item: {"biz":"","name":"","title":"","phone":"","email":"","web":"","address":"","area":""}'}
         ]}]
       })
@@ -602,7 +607,7 @@ function doScan(ev) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       document.getElementById('scanmsg').style.display = 'none';
-      var txt = (data.content && data.content[0]) ? data.content[0].text : '';
+      var txt = (data.choices && data.choices[0]) ? data.choices[0].message.content : '';
       try {
         var clean = txt.replace(/^```json|^```|```$/gm, '').trim();
         extCards = JSON.parse(clean);
